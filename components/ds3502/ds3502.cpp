@@ -32,14 +32,17 @@ void DS3502Component::set_wiper(uint8_t value) {
   // The DS3502 has 7-bit resolution (0-127)
   if (value > 127)
     value = 127;
-    
+  
   ESP_LOGD(TAG, "Setting wiper to %u", value);
   this->write_byte(DS3502_REG_WIPER, value);
 }
 
 uint8_t DS3502Component::get_wiper() {
   uint8_t value = 0;
-  this->read_byte(DS3502_REG_WIPER, &value);
+  if (!this->read_byte(DS3502_REG_WIPER, &value)) {
+    ESP_LOGW(TAG, "Failed to read wiper value");
+    return 0xFF;  // Return error value
+  }
   return value;
 }
 
@@ -72,6 +75,19 @@ void DS3502Output::write_state(float state) {
   
   ESP_LOGD(TAG, "Setting output: %.2f%% (wiper: %d)", state * 100.0f, wiper_value);
   this->parent_->set_wiper(wiper_value);
+}
+
+void DS3502Sensor::update() {
+  if (this->parent_ == nullptr) {
+    ESP_LOGW(TAG, "No parent set for DS3502Sensor!");
+    return;
+  }
+  
+  uint8_t wiper_value = this->parent_->get_wiper();
+  if (wiper_value != 0xFF) {  // Only publish if read was successful
+    this->publish_state(wiper_value);
+    ESP_LOGV(TAG, "Sensor read wiper value: %d", wiper_value);
+  }
 }
 
 }  // namespace ds3502

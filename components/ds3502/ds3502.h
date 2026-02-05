@@ -3,6 +3,7 @@
 #include "esphome/core/component.h"
 #include "esphome/components/output/float_output.h"
 #include "esphome/components/i2c/i2c.h"
+#include "esphome/components/sensor/sensor.h"
 
 namespace esphome {
 namespace ds3502 {
@@ -16,7 +17,7 @@ class DS3502Component : public Component, public i2c::I2CDevice {
   void setup() override;
   void dump_config() override;
   float get_setup_priority() const override { return setup_priority::HARDWARE; }
-  
+
   void set_wiper(uint8_t value);
   uint8_t get_wiper();
 };
@@ -28,9 +29,19 @@ class DS3502Output : public output::FloatOutput, public Component {
   void setup() override;
   void dump_config() override;
   float get_setup_priority() const override { return setup_priority::HARDWARE; }
-  
+
  protected:
   void write_state(float state) override;
+  DS3502Component *parent_{nullptr};
+};
+
+class DS3502Sensor : public sensor::Sensor, public PollingComponent {
+ public:
+  void set_parent(DS3502Component *parent) { parent_ = parent; }
+  void update() override;
+  float get_setup_priority() const override { return setup_priority::DATA; }
+
+ protected:
   DS3502Component *parent_{nullptr};
 };
 
